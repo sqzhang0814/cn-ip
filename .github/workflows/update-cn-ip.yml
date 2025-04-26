@@ -1,35 +1,41 @@
+# GitHub Actions 工作流：自动更新 MikroTik CN_IP RSC 文件
 name: Update CN_IP RSC
 
+# 触发条件：手动触发和定时触发
 on:
+  workflow_dispatch:  # 支持在 GitHub UI 或 CLI 中手动触发
   schedule:
-    # 每天凌晨 2 点跑一次
-    - cron:  '0 2 * * *'
+    - cron: '0 2 * * *'  # 每天 02:00 UTC 定时执行
 
 jobs:
   build:
-    runs-on: ubuntu-latest
-
+    runs-on: ubuntu-latest  # 运行环境：最新版本的 Ubuntu
     steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
-
-    - name: Download CN_IP TXT
-      run: |
-        curl -s https://ispip.clang.cn/all_cn_cidr.txt -o all_cn_cidr.txt
-
-    - name: Generate RSC file
-      run: |
-        echo '/ip firewall address-list remove [find list=CN_IP]' > all_cn_cidr.rsc
-        # 每行变成一条添加命令
-        awk '{print "/ip firewall address-list add list=CN_IP address="$0" comment=\"China_IP\""}' all_cn_cidr.txt >> all_cn_cidr.rsc
-
-    - name: Commit and push changes
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "github-actions[bot]@users.noreply.github.com"
-        git add all_cn_cidr.rsc
-        git commit -m "Auto-update CN_IP RSC $(date +'%Y-%m-%d')" || echo "No changes"
-        git push
-      env:
-        # 使用默认的 GITHUB_TOKEN，无需额外配置
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v3  # 检出仓库代码
+      
+      - name: Download CN_IP TXT
+        run: |
+          # 下载最新的 CN_IP 文本列表
+          curl -s https://ispip.clang.cn/all_cn_cidr.txt -o all_cn_cidr.txt
+      
+      - name: Generate RSC file
+        run: |
+          # 清空旧的 CN_IP 地址列表命令
+          echo '/ip firewall address-list remove [find list=CN_IP]' > all_cn_cidr.rsc
+          # 将 TXT 中每行 IP 段转换为 RSC 添加命令并追加到文件末尾
+          awk '{print "/ip firewall address-list add list=CN_IP address=" $0 " comment=\"China_IP\""}' all_cn_cidr.txt >> all_cn_cidr.rsc
+      
+      - name: Commit and push changes
+        run: |
+          # 配置 Git 用户信息，用于提交操作
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          # 将生成的 RSC 文件添加至版本控制
+          git add all_cn_cidr.rsc
+          # 提交更改；若无变化，则跳过
+          git commit -m "Auto-update CN_IP RSC $(date +'%Y-%m-%d')" || echo "No changes"
+          # 推送到远程仓库
+          git push
+        env:
+          # 使用 GitHub 提供的自动令牌，无需自行配置
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
