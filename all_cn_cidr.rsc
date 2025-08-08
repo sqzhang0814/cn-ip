@@ -547,6 +547,7 @@
 /ip firewall address-list add list=CN_IP address=45.114.200.0/22 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=45.114.228.0/22 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=45.114.252.0/22 comment="China_IP"
+/ip firewall address-list add list=CN_IP address=45.115.18.0/23 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=45.115.44.0/22 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=45.115.100.0/22 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=45.115.120.0/22 comment="China_IP"
