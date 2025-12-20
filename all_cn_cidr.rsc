@@ -450,6 +450,7 @@
 /ip firewall address-list add list=CN_IP address=45.248.8.0/22 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=45.248.108.0/24 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=45.248.204.0/22 comment="China_IP"
+/ip firewall address-list add list=CN_IP address=45.249.188.0/24 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=45.249.208.0/23 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=45.249.212.0/22 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=45.250.28.0/22 comment="China_IP"
