@@ -2818,6 +2818,7 @@
 /ip firewall address-list add list=CN_IP address=141.11.141.0/24 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=143.14.49.0/24 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=143.20.147.0/24 comment="China_IP"
+/ip firewall address-list add list=CN_IP address=143.20.246.0/24 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=143.64.0.0/16 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=144.0.0.0/16 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=144.7.0.0/17 comment="China_IP"
