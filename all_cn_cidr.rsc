@@ -1050,7 +1050,6 @@
 /ip firewall address-list add list=CN_IP address=103.72.113.0/24 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=103.72.120.0/22 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=103.72.172.0/24 comment="China_IP"
-/ip firewall address-list add list=CN_IP address=103.72.224.0/24 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=103.73.48.0/24 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=103.73.116.0/22 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=103.73.136.0/21 comment="China_IP"
