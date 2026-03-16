@@ -496,7 +496,6 @@
 /ip firewall address-list add list=CN_IP address=52.82.136.0/24 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=52.82.144.0/23 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=52.82.148.0/22 comment="China_IP"
-/ip firewall address-list add list=CN_IP address=52.82.153.0/24 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=52.82.160.0/21 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=52.82.170.0/23 comment="China_IP"
 /ip firewall address-list add list=CN_IP address=52.82.172.0/22 comment="China_IP"
