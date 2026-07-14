@@ -1,5 +1,49 @@
 {
   "artifacts": {
+    "routeros_json_shards": {
+      "files": [
+        {
+          "bytes": 17031,
+          "entries": 1000,
+          "part": 1,
+          "path": "cn_ip_part_01.json",
+          "sha512": "6ded5202ef532be9bc8f7e3e5442bddf6e1c4d9c377da4b947457945cce4e1cc7d0af85d328f8b35f09de6af7b2d4d0d44c1b2d4c36e9b0f166c66c600eed6f1"
+        },
+        {
+          "bytes": 17890,
+          "entries": 1000,
+          "part": 2,
+          "path": "cn_ip_part_02.json",
+          "sha512": "b9c2cba2b653460aee3ae524dc07b6983ec236d2398a27a41591a7c3fa85f1ab3cc8c92d776cb2e1256992259f2bf7a4f2cedb66489c077d739a187101c1842a"
+        },
+        {
+          "bytes": 17691,
+          "entries": 1000,
+          "part": 3,
+          "path": "cn_ip_part_03.json",
+          "sha512": "273195853bbaefa3bfcc9f0d7440a75250ccdb1d69b342ad09f1b3dc67b832491689101e378d1d7044c06e666a64b6de639aeefb5af55262fa1460c2b21abeca"
+        },
+        {
+          "bytes": 17924,
+          "entries": 1000,
+          "part": 4,
+          "path": "cn_ip_part_04.json",
+          "sha512": "5b712546543f8c17bf234dfcb2f49a0e65695bb46d83074a6767525e59df74c258a988edd3ef5ab620e8d8a1a92c2c0b6cec26511acd4aa7ec41c8142f0f61d1"
+        },
+        {
+          "bytes": 5897,
+          "entries": 325,
+          "part": 5,
+          "path": "cn_ip_part_05.json",
+          "sha512": "b185ca5b34bf0cb570d9e8955b0e1da9ae7af717176501ac59f55e1715eec1761cca737c3252cf4d9c0ccdd177624784bd4c9d731fd9a1fe70f49661c224ffa8"
+        }
+      ],
+      "format": "json",
+      "maximum_bytes_per_shard": 60000,
+      "maximum_entries_per_shard": 1000,
+      "parts": 5,
+      "total_entries": 4325
+    },
     "routeros_rsc": {
       "bytes": 448168,
       "path": "all_cn_cidr_stage.rsc",
@@ -44,7 +88,7 @@
   },
   "generated_at_utc": "2026-07-14T13:14:54Z",
   "generation_id": "73d85aee4e6c6868",
-  "schema_version": 1,
+  "schema_version": 2,
   "source": {
     "canonical_sha256": "73d85aee4e6c6868803243486ed6621d1959703eed3b7becb61bcbebb7da9697",
     "url": "https://ispip.clang.cn/all_cn_cidr.txt"
