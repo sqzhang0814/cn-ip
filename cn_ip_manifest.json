@@ -1,0 +1,61 @@
+{
+  "artifacts": {
+    "routeros_rsc": {
+      "bytes": 448168,
+      "path": "all_cn_cidr_stage.rsc",
+      "sha256": "7a6de0cc09b21d0372a51beafe450f28c8e787581b76394a598b5012f3bbbdf4",
+      "target_list": "CN_IP_STAGE"
+    }
+  },
+  "baseline": {
+    "count": 4325,
+    "count_change_percent": 0.0,
+    "coverage_change_percent": 0.0,
+    "ipv4_address_coverage": 286281984
+  },
+  "crosscheck": {
+    "comparison": {
+      "crosscheck_not_in_primary_ipv4_addresses": 59822848,
+      "crosscheck_not_in_primary_percent": 17.310313,
+      "intersection_ipv4_addresses": 285767936,
+      "jaccard_percent": 82.566873,
+      "primary_not_in_crosscheck_ipv4_addresses": 514048,
+      "primary_not_in_crosscheck_percent": 0.17956,
+      "union_ipv4_addresses": 346104832
+    },
+    "entries": {
+      "count": 5672,
+      "ipv4_address_coverage": 345590784
+    },
+    "result": "passed",
+    "source": {
+      "canonical_sha256": "9ec2f2e5cfe09c787f92e344fe4568a24f46200f574b2735e6905f541b691ef6",
+      "url": "https://raw.githubusercontent.com/fernvenue/chn-cidr-list/master/ipv4.txt"
+    },
+    "thresholds": {
+      "maximum_crosscheck_not_in_primary_percent": 25.0,
+      "maximum_primary_not_in_crosscheck_percent": 2.0,
+      "minimum_jaccard_percent": 75.0
+    }
+  },
+  "entries": {
+    "count": 4325,
+    "ipv4_address_coverage": 286281984
+  },
+  "generated_at_utc": "2026-07-14T13:14:54Z",
+  "generation_id": "73d85aee4e6c6868",
+  "schema_version": 1,
+  "source": {
+    "canonical_sha256": "73d85aee4e6c6868803243486ed6621d1959703eed3b7becb61bcbebb7da9697",
+    "url": "https://ispip.clang.cn/all_cn_cidr.txt"
+  },
+  "validation": {
+    "duplicates": 0,
+    "maximum_count_change_percent": 15.0,
+    "maximum_coverage_change_percent": 10.0,
+    "maximum_entries": 6000,
+    "minimum_entries": 3500,
+    "overlaps": 0,
+    "result": "passed"
+  }
+}

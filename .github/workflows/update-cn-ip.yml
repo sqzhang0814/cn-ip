@@ -1,51 +1,111 @@
-# GitHub Actions 工作流：自动更新 MikroTik CN_IP RSC 文件
-# 此工作流支持手动触发和定时调度，执行后会拉取最新 all_cn_cidr.txt，生成 all_cn_cidr.rsc 并提交回仓库
+name: Update CN_IP staging artifacts
 
-name: Update CN_IP RSC
-
-# 触发条件
 on:
-  workflow_dispatch:    # 支持在 GitHub UI 或 CLI 中手动触发
+  workflow_dispatch:
   schedule:
-    - cron: '0 2 * * *'  # 每天 02:00 UTC 执行
+    - cron: "0 2 * * *"
 
-# Workflow 运行所需权限
 permissions:
-  contents: write      # 允许写入仓库内容，以便推送 .rsc 文件更改
+  contents: write
+
+concurrency:
+  group: cn-ip-update-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # 使用最新 Ubuntu 环境
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
 
-    # 检出代码，并保持完整历史以便执行 git commit & push
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0          # 获取完整 Git 历史
-          persist-credentials: true  # 保留 GITHUB_TOKEN 凭据，允许后续推送
+          fetch-depth: 0
+          persist-credentials: true
 
-      - name: Download CN_IP TXT
-        run: |
-          # 下载最新的 CN_IP 文本列表
-          curl -s https://ispip.clang.cn/all_cn_cidr.txt -o all_cn_cidr.txt
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
-      - name: Generate RSC file
-        run: |
-          # 生成 .rsc 文件：先清空旧列表，再追加每行添加命令
-          echo '/ip firewall address-list remove [find list=CN_IP]' > all_cn_cidr.rsc
-          awk '{print "/ip firewall address-list add list=CN_IP address=" $0 " comment=\"China_IP\""}' all_cn_cidr.txt >> all_cn_cidr.rsc
+      - name: Run unit tests
+        run: python -m unittest discover -s tests -v
 
-      - name: Commit and push changes
+      - name: Download primary and cross-check sources
+        shell: bash
         run: |
-          # 配置提交作者信息
+          set -euo pipefail
+
+          download_checked() {
+            local url="$1"
+            local output="$2"
+            local -a metadata=()
+
+            mapfile -t metadata < <(
+              curl \
+                --fail \
+                --show-error \
+                --silent \
+                --location \
+                --retry 3 \
+                --retry-all-errors \
+                --connect-timeout 10 \
+                --max-time 60 \
+                --max-filesize 2097152 \
+                --proto '=https' \
+                --tlsv1.2 \
+                --output "$output" \
+                --write-out '%{http_code}\n%{content_type}\n%{size_download}\n' \
+                "$url"
+            )
+
+            if (( ${#metadata[@]} != 3 )); then
+              echo "$url returned incomplete response metadata" >&2
+              return 1
+            fi
+            test "${metadata[0]}" = "200"
+            case "${metadata[1]}" in
+              text/plain*) ;;
+              *) echo "$url returned unexpected Content-Type: ${metadata[1]}" >&2; return 1 ;;
+            esac
+            test "${metadata[2]}" -gt 0
+          }
+
+          download_checked \
+            "https://ispip.clang.cn/all_cn_cidr.txt" \
+            all_cn_cidr.txt
+          download_checked \
+            "https://raw.githubusercontent.com/fernvenue/chn-cidr-list/master/ipv4.txt" \
+            crosscheck_ipv4.txt
+
+      - name: Validate and build staging artifacts
+        run: |
+          python scripts/build_cn_ip.py \
+            --input all_cn_cidr.txt \
+            --output all_cn_cidr_stage.rsc \
+            --manifest cn_ip_manifest.json \
+            --previous-rsc all_cn_cidr_stage.rsc \
+            --previous-rsc all_cn_cidr.rsc \
+            --previous-manifest cn_ip_manifest.json \
+            --source-url https://ispip.clang.cn/all_cn_cidr.txt \
+            --crosscheck-input crosscheck_ipv4.txt \
+            --crosscheck-source-url https://raw.githubusercontent.com/fernvenue/chn-cidr-list/master/ipv4.txt
+
+      - name: Validate repository diff
+        run: git diff --check
+
+      - name: Commit generated artifacts
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "$(git status --porcelain -- all_cn_cidr_stage.rsc cn_ip_manifest.json)" ]]; then
+            echo "No source changes."
+            exit 0
+          fi
+
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          # 添加并提交 .rsc 文件
-          git add all_cn_cidr.rsc
-          git commit -m "Auto-update CN_IP RSC $(date +'%Y-%m-%d')" || echo "No changes to commit"
-          # 推送到远端仓库
-          git push origin ${{ github.ref }}
-        env:
-          # 使用自动提供的 GITHUB_TOKEN
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add all_cn_cidr_stage.rsc cn_ip_manifest.json
+          git commit -m "Auto-update CN_IP staging artifacts $(date -u +'%Y-%m-%d')"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
