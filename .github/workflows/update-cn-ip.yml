@@ -90,7 +90,10 @@ jobs:
             --previous-manifest cn_ip_manifest.json \
             --source-url https://ispip.clang.cn/all_cn_cidr.txt \
             --crosscheck-input crosscheck_ipv4.txt \
-            --crosscheck-source-url https://raw.githubusercontent.com/fernvenue/chn-cidr-list/master/ipv4.txt
+            --crosscheck-source-url https://raw.githubusercontent.com/fernvenue/chn-cidr-list/master/ipv4.txt \
+            --shard-directory . \
+            --shard-prefix cn_ip_part_ \
+            --shard-size 1000
 
       - name: Validate repository diff
         run: git diff --check
@@ -99,13 +102,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          if [[ -z "$(git status --porcelain -- all_cn_cidr_stage.rsc cn_ip_manifest.json)" ]]; then
+          if [[ -z "$(git status --porcelain -- all_cn_cidr_stage.rsc cn_ip_manifest.json 'cn_ip_part_*.json')" ]]; then
             echo "No source changes."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add all_cn_cidr_stage.rsc cn_ip_manifest.json
+          git add -A -- all_cn_cidr_stage.rsc cn_ip_manifest.json 'cn_ip_part_*.json'
           git commit -m "Auto-update CN_IP staging artifacts $(date -u +'%Y-%m-%d')"
           git push origin "HEAD:${GITHUB_REF_NAME}"

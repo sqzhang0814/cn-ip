@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate a China IPv4 CIDR source and build a staging-only RouterOS RSC."""
+"""Validate China IPv4 CIDRs and build safe RouterOS data artifacts."""
 
 from __future__ import annotations
 
@@ -40,6 +40,7 @@ FORBIDDEN_NETWORKS = tuple(
 ADD_PREFIX = "/ip firewall address-list add "
 REMOVE_STAGE = '/ip firewall address-list remove [find where list="CN_IP_STAGE"]'
 SECTION_HEADER = "/ip firewall address-list"
+MAX_ROUTEROS_USER_OUTPUT_BYTES = 60_000
 
 
 def _sort_networks(
@@ -265,6 +266,80 @@ def validate_generated_rsc(text: str, expected_entries: int) -> None:
         )
 
 
+def build_json_shards(
+    networks: Sequence[ipaddress.IPv4Network],
+    *,
+    generation_id: str,
+    shard_directory: Path,
+    shard_prefix: str,
+    shard_size: int,
+) -> tuple[list[tuple[Path, str]], list[dict]]:
+    """Build small data-only JSON shards suitable for RouterOS output=user."""
+    if not re.fullmatch(r"[A-Za-z0-9_.-]+", shard_prefix):
+        raise ValidationError("shard prefix contains unsupported characters")
+    if not 1 <= shard_size <= 1000:
+        raise ValidationError("shard size must be between 1 and 1000")
+
+    total_parts = (len(networks) + shard_size - 1) // shard_size
+    files: list[tuple[Path, str]] = []
+    metadata: list[dict] = []
+    for offset in range(0, len(networks), shard_size):
+        part = offset // shard_size + 1
+        entries = [str(network) for network in networks[offset : offset + shard_size]]
+        payload = {
+            "schema_version": 1,
+            "generation_id": generation_id,
+            "part": part,
+            "parts": total_parts,
+            "entries": entries,
+        }
+        text = json.dumps(
+            payload,
+            ensure_ascii=True,
+            separators=(",", ":"),
+            sort_keys=True,
+        ) + "\n"
+        encoded = text.encode("utf-8")
+        if len(encoded) > MAX_ROUTEROS_USER_OUTPUT_BYTES:
+            raise ValidationError(
+                f"JSON shard {part} is {len(encoded)} bytes, RouterOS-safe limit is "
+                f"{MAX_ROUTEROS_USER_OUTPUT_BYTES}"
+            )
+        path = shard_directory / f"{shard_prefix}{part:02d}.json"
+        files.append((path, text))
+        metadata.append(
+            {
+                "part": part,
+                "path": path.name,
+                "entries": len(entries),
+                "bytes": len(encoded),
+                "sha512": hashlib.sha512(encoded).hexdigest(),
+            }
+        )
+    return files, metadata
+
+
+def write_json_shards(
+    files: Sequence[tuple[Path, str]],
+    *,
+    shard_directory: Path,
+    shard_prefix: str,
+) -> None:
+    """Atomically write expected shards and remove stale numbered shards."""
+    expected = {path.resolve() for path, _ in files}
+    stale_pattern = re.compile(rf"{re.escape(shard_prefix)}\d+\.json")
+    if shard_directory.exists():
+        for candidate in shard_directory.iterdir():
+            if (
+                candidate.is_file()
+                and stale_pattern.fullmatch(candidate.name)
+                and candidate.resolve() not in expected
+            ):
+                candidate.unlink()
+    for path, text in files:
+        _atomic_write(path, text)
+
+
 def _read_previous_manifest(path: Path | None) -> dict:
     if path is None or not path.exists():
         return {}
@@ -303,6 +378,9 @@ def generate(
     maximum_primary_not_in_crosscheck_percent: float,
     maximum_crosscheck_not_in_primary_percent: float,
     minimum_jaccard_percent: float,
+    shard_directory: Path,
+    shard_prefix: str,
+    shard_size: int,
     generated_at_utc: str | None = None,
 ) -> dict:
     networks = parse_source(input_path, minimum_entries, maximum_entries)
@@ -367,9 +445,16 @@ def generate(
     validate_generated_rsc(rsc_text, current_count)
     rsc_bytes = rsc_text.encode("utf-8")
     rsc_hash = hashlib.sha256(rsc_bytes).hexdigest()
+    shard_files, shard_metadata = build_json_shards(
+        networks,
+        generation_id=generation_id,
+        shard_directory=shard_directory,
+        shard_prefix=shard_prefix,
+        shard_size=shard_size,
+    )
 
     manifest = {
-        "schema_version": 1,
+        "schema_version": 2,
         "generation_id": generation_id,
         "generated_at_utc": generated_at_utc,
         "source": {
@@ -422,7 +507,15 @@ def generate(
                 "bytes": len(rsc_bytes),
                 "sha256": rsc_hash,
                 "target_list": "CN_IP_STAGE",
-            }
+            },
+            "routeros_json_shards": {
+                "format": "json",
+                "maximum_entries_per_shard": shard_size,
+                "maximum_bytes_per_shard": MAX_ROUTEROS_USER_OUTPUT_BYTES,
+                "parts": len(shard_files),
+                "total_entries": current_count,
+                "files": shard_metadata,
+            },
         },
     }
 
@@ -430,6 +523,11 @@ def generate(
         manifest, ensure_ascii=False, indent=2, sort_keys=True
     ) + "\n"
     _atomic_write(output_path, rsc_text)
+    write_json_shards(
+        shard_files,
+        shard_directory=shard_directory,
+        shard_prefix=shard_prefix,
+    )
     _atomic_write(manifest_path, manifest_text)
     return manifest
 
@@ -459,6 +557,9 @@ def parse_args() -> argparse.Namespace:
         "--maximum-crosscheck-not-in-primary-percent", type=float, default=25.0
     )
     parser.add_argument("--minimum-jaccard-percent", type=float, default=75.0)
+    parser.add_argument("--shard-directory", type=Path, default=Path("."))
+    parser.add_argument("--shard-prefix", default="cn_ip_part_")
+    parser.add_argument("--shard-size", type=int, default=1000)
     parser.add_argument("--generated-at-utc")
     return parser.parse_args()
 
@@ -488,6 +589,9 @@ def main() -> int:
                 args.maximum_crosscheck_not_in_primary_percent
             ),
             minimum_jaccard_percent=args.minimum_jaccard_percent,
+            shard_directory=args.shard_directory,
+            shard_prefix=args.shard_prefix,
+            shard_size=args.shard_size,
             generated_at_utc=args.generated_at_utc,
         )
     except ValidationError as exc:

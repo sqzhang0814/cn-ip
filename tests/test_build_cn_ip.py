@@ -1,4 +1,5 @@
 import json
+import hashlib
 import tempfile
 import unittest
 from pathlib import Path
@@ -56,6 +57,9 @@ class BuildCnIpTests(unittest.TestCase):
             "maximum_primary_not_in_crosscheck_percent": 2.0,
             "maximum_crosscheck_not_in_primary_percent": 25.0,
             "minimum_jaccard_percent": 75.0,
+            "shard_directory": self.root,
+            "shard_prefix": "cn_ip_part_",
+            "shard_size": 1,
             "generated_at_utc": "2026-07-14T00:00:00Z",
         }
         arguments.update(overrides)
@@ -78,6 +82,20 @@ class BuildCnIpTests(unittest.TestCase):
         self.assertIn('remove [find where list="CN_IP_STAGE"]', rsc)
         self.assertNotIn('remove [find where list="CN_IP"]', rsc)
         self.assertLess(rsc.index("1.1.8.0/24"), rsc.index("1.2.4.0/24"))
+        self.assertEqual(manifest["schema_version"], 2)
+        shards = manifest["artifacts"]["routeros_json_shards"]
+        self.assertEqual(shards["parts"], 2)
+        self.assertEqual(shards["total_entries"], 2)
+        for item in shards["files"]:
+            path = self.root / item["path"]
+            payload = json.loads(path.read_text(encoding="utf-8"))
+            self.assertEqual(payload["generation_id"], manifest["generation_id"])
+            self.assertEqual(payload["part"], item["part"])
+            self.assertEqual(len(payload["entries"]), item["entries"])
+            self.assertEqual(path.stat().st_size, item["bytes"])
+            self.assertEqual(
+                hashlib.sha512(path.read_bytes()).hexdigest(), item["sha512"]
+            )
 
     def test_rejects_malformed_cidr(self):
         self.write_source("1.1.8.1/24", "1.2.4.0/24")
@@ -136,6 +154,10 @@ class BuildCnIpTests(unittest.TestCase):
         )
         first_rsc = self.output.read_bytes()
         first_manifest = self.manifest.read_bytes()
+        first_shards = {
+            path.name: path.read_bytes()
+            for path in self.root.glob("cn_ip_part_*.json")
+        }
         second = self.run_generate(
             previous_rsc_paths=paths,
             generated_at_utc="2026-07-15T00:00:00Z",
@@ -147,6 +169,26 @@ class BuildCnIpTests(unittest.TestCase):
         self.assertEqual(stored["generation_id"], first["generation_id"])
         self.assertEqual(self.output.read_bytes(), first_rsc)
         self.assertEqual(self.manifest.read_bytes(), first_manifest)
+        self.assertEqual(
+            {
+                path.name: path.read_bytes()
+                for path in self.root.glob("cn_ip_part_*.json")
+            },
+            first_shards,
+        )
+
+    def test_removes_stale_numbered_shards_only(self):
+        self.write_source("1.1.8.0/24", "1.2.4.0/24")
+        self.write_previous("1.1.8.0/24", "1.2.4.0/24")
+        stale = self.root / "cn_ip_part_99.json"
+        unrelated = self.root / "cn_ip_part_notes.json"
+        stale.write_text("stale", encoding="utf-8")
+        unrelated.write_text("keep", encoding="utf-8")
+
+        self.run_generate()
+
+        self.assertFalse(stale.exists())
+        self.assertTrue(unrelated.exists())
 
 
 if __name__ == "__main__":
