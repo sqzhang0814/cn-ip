@@ -1,13 +1,59 @@
 import json
 import hashlib
+import math
 import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.build_cn_ip import ValidationError, generate
+from scripts.build_cn_ip import ValidationError, generate, routeros_json_dumps
 
 
 SOURCE_URL = "https://example.test/all_cn_cidr.txt"
+
+
+class RouterOSJsonTests(unittest.TestCase):
+    def test_expands_scientific_notation_without_changing_numeric_values(self):
+        values = [9e-05, -9e-05, 1e-06, 1.2345678901234567e-20,
+                  1e20, -1.25e25, 5e-324, 1.7976931348623157e308, -0.0]
+        for value in values:
+            with self.subTest(value=value):
+                text = routeros_json_dumps({"value": value})
+                numeric_text = text.split(":", 1)[1]
+                self.assertNotRegex(numeric_text, r"[eE]")
+                decoded = json.loads(text)["value"]
+                self.assertIsInstance(decoded, float)
+                self.assertEqual(decoded, value)
+                self.assertEqual(math.copysign(1, decoded), math.copysign(1, value))
+        self.assertEqual(routeros_json_dumps(9e-05), "0.00009")
+
+    def test_nested_numbers_and_exponent_like_strings_are_distinct(self):
+        value = {
+            "9e-05": 'escaped quote: "9e-05"; backslash: \\; 中文',
+            "url": "https://example.test/9e-05?q=1e+20",
+            "hash": "abc123e456def",
+            "nested": [9e-05, {"positive": 1e20, "integer": 4299}],
+        }
+        for ensure_ascii in (True, False):
+            with self.subTest(ensure_ascii=ensure_ascii):
+                text = routeros_json_dumps(value, sort_keys=True, indent=2,
+                                           ensure_ascii=ensure_ascii)
+                self.assertEqual(json.loads(text), value)
+                self.assertIn('"9e-05"', text)
+                self.assertIn("0.00009", text)
+                self.assertIsInstance(json.loads(text)["nested"][1]["integer"], int)
+
+    def test_nonfinite_numbers_are_rejected(self):
+        for value in (float("nan"), float("inf"), float("-inf")):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                routeros_json_dumps({"nested": [value]})
+
+    def test_non_exponent_json_output_is_unchanged(self):
+        value = {"entries": ["1.2.3.0/24"], "count": 4299,
+                 "ratio": 0.125, "zero": 0.0, "ok": True, "missing": None}
+        for options in ({"indent": 2, "sort_keys": True},
+                        {"separators": (",", ":"), "sort_keys": True}):
+            self.assertEqual(routeros_json_dumps(value, **options),
+                             json.dumps(value, **options))
 
 
 class BuildCnIpTests(unittest.TestCase):
@@ -101,6 +147,41 @@ class BuildCnIpTests(unittest.TestCase):
         self.write_source("1.1.8.1/24", "1.2.4.0/24")
         with self.assertRaisesRegex(ValidationError, "invalid CIDR"):
             self.run_generate()
+
+    def test_manifest_small_coverage_delta_uses_plain_decimal(self):
+        # A real coverage delta rounds to 6e-06 under the existing six-place
+        # metric calculation. It must serialize as 0.000006, not an exponent.
+        self.write_source("1.0.0.0/8", "8.8.8.0/24", "9.0.0.1/32")
+        self.write_previous("1.0.0.0/8", "8.8.8.0/24")
+        manifest = self.run_generate()
+        text = self.manifest.read_text(encoding="utf-8")
+        self.assertEqual(manifest["baseline"]["coverage_change_percent"], 6e-06)
+        self.assertIn('"coverage_change_percent": 0.000006', text)
+        self.assertNotIn("6e-06", text)
+        self.assertEqual(json.loads(text), manifest)
+        for item in manifest["artifacts"]["routeros_json_shards"]["files"]:
+            shard_bytes = (self.root / item["path"]).read_bytes()
+            self.assertEqual(len(shard_bytes), item["bytes"])
+            self.assertEqual(hashlib.sha512(shard_bytes).hexdigest(), item["sha512"])
+
+    def test_manifest_expands_scientific_notation_in_thresholds(self):
+        self.write_source("1.1.8.0/24", "1.2.4.0/24")
+        self.write_previous("1.1.8.0/24", "1.2.4.0/24")
+        manifest = self.run_generate(maximum_coverage_change_percent=9e-05)
+        text = self.manifest.read_text(encoding="utf-8")
+        self.assertIn('"maximum_coverage_change_percent": 0.00009', text)
+        self.assertEqual(json.loads(text), manifest)
+
+    def test_coverage_safety_failure_does_not_overwrite_artifacts(self):
+        self.write_source("1.1.8.0/24", "1.2.4.0/24")
+        self.write_previous("1.1.8.0/24", "1.2.4.0/24")
+        self.run_generate()
+        outputs = [self.output, self.manifest, *self.root.glob("cn_ip_part_*.json")]
+        before = {path: path.read_bytes() for path in outputs}
+        self.write_source("1.1.8.0/23", "1.2.4.0/24")
+        with self.assertRaisesRegex(ValidationError, "IPv4 coverage changed"):
+            self.run_generate(maximum_coverage_change_percent=9e-05)
+        self.assertEqual({path: path.read_bytes() for path in outputs}, before)
 
     def test_rejects_forbidden_network(self):
         self.write_source("1.1.8.0/24", "198.18.0.0/16")

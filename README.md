@@ -28,6 +28,8 @@ GitHub Actions 每天下载主源 `https://ispip.clang.cn/all_cn_cidr.txt`，并
 
 RouterOS 自动更新器应使用 JSON 分片作为数据，通过 HTTPS、大小、SHA-512、generation 和总数校验后自行写入 `CN_IP_STAGE`，不应 `/import` 远程 RSC。
 
+JSON 数字统一使用普通十进制格式，例如 `0.00009`，不使用 `9e-05` 这样的科学计数法，避免 RouterOS JSON 解析兼容性问题。数字仍是 JSON 数值，不转换为字符串，也不额外四舍五入；来源交叉校验、变化阈值、分片大小和哈希校验保持不变。非有限数值（NaN / Infinity）禁止输出。
+
 ## 本地验证
 
 ```powershell

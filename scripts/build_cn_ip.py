@@ -9,6 +9,7 @@ import ipaddress
 import json
 import re
 from datetime import datetime, timezone
+from decimal import Decimal
 from pathlib import Path
 from typing import Iterable, Sequence
 
@@ -41,6 +42,31 @@ ADD_PREFIX = "/ip firewall address-list add "
 REMOVE_STAGE = '/ip firewall address-list remove [find where list="CN_IP_STAGE"]'
 SECTION_HEADER = "/ip firewall address-list"
 MAX_ROUTEROS_USER_OUTPUT_BYTES = 60_000
+
+# Consume quoted strings whole so URLs, hashes and escaped string contents are
+# never rewritten. The other branch matches only JSON number tokens.
+JSON_TOKEN = re.compile(r'"(?:[^"\\]|\\.)*"|-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?')
+
+
+def routeros_json_dumps(value: object, **kwargs) -> str:
+    """Serialize finite JSON numbers without exponent notation for RouterOS.
+
+    Start with the standard encoder to preserve its escaping and deterministic
+    formatting. Expand only numeric exponent tokens using Decimal, not float
+    formatting: this preserves the encoder's exact value without rounding tiny
+    nonzero percentages to zero. Numbers stay numbers, not quoted strings.
+    """
+    text = json.dumps(value, allow_nan=False, **kwargs)
+
+    def expand_number(match: re.Match[str]) -> str:
+        token = match.group()
+        if token.startswith('"') or ("e" not in token.lower()):
+            return token
+        expanded = format(Decimal(token), "f")
+        # Exponent tokens come from floats; preserve their float round-trip too.
+        return expanded if "." in expanded else expanded + ".0"
+
+    return JSON_TOKEN.sub(expand_number, text)
 
 
 def _sort_networks(
@@ -293,7 +319,7 @@ def build_json_shards(
             "parts": total_parts,
             "entries": entries,
         }
-        text = json.dumps(
+        text = routeros_json_dumps(
             payload,
             ensure_ascii=True,
             separators=(",", ":"),
@@ -519,7 +545,7 @@ def generate(
         },
     }
 
-    manifest_text = json.dumps(
+    manifest_text = routeros_json_dumps(
         manifest, ensure_ascii=False, indent=2, sort_keys=True
     ) + "\n"
     _atomic_write(output_path, rsc_text)
@@ -596,7 +622,7 @@ def main() -> int:
         )
     except ValidationError as exc:
         raise SystemExit(f"validation failed: {exc}") from exc
-    print(json.dumps(manifest, ensure_ascii=False, sort_keys=True))
+    print(routeros_json_dumps(manifest, ensure_ascii=False, sort_keys=True))
     return 0
 
 
