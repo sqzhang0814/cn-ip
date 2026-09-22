@@ -52,28 +52,28 @@
     }
   },
   "baseline": {
-    "count": 4297,
-    "count_change_percent": 0.093088,
-    "coverage_change_percent": 0.000358,
-    "ipv4_address_coverage": 285874176
+    "count": 4301,
+    "count_change_percent": 0.0,
+    "coverage_change_percent": 0.0,
+    "ipv4_address_coverage": 285875200
   },
   "crosscheck": {
     "comparison": {
       "crosscheck_not_in_primary_ipv4_addresses": 60289536,
-      "crosscheck_not_in_primary_percent": 17.443829,
-      "intersection_ipv4_addresses": 285331456,
-      "jaccard_percent": 82.426494,
-      "primary_not_in_crosscheck_ipv4_addresses": 543744,
-      "primary_not_in_crosscheck_percent": 0.190203,
+      "crosscheck_not_in_primary_percent": 17.443855,
+      "intersection_ipv4_addresses": 285330944,
+      "jaccard_percent": 82.426346,
+      "primary_not_in_crosscheck_ipv4_addresses": 544256,
+      "primary_not_in_crosscheck_percent": 0.190382,
       "union_ipv4_addresses": 346164736
     },
     "entries": {
-      "count": 5640,
-      "ipv4_address_coverage": 345620992
+      "count": 5639,
+      "ipv4_address_coverage": 345620480
     },
     "result": "passed",
     "source": {
-      "canonical_sha256": "bbf2f14e4f7ac619eaa99aac17b857dbb845517fb7fb452de976e7b0be528d27",
+      "canonical_sha256": "c9b70fd7140a57e3d95862b49211b4de2bbf5a563020a0a65af244fcbeffc97e",
       "url": "https://raw.githubusercontent.com/fernvenue/chn-cidr-list/master/ipv4.txt"
     },
     "thresholds": {
