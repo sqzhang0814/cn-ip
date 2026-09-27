@@ -52,10 +52,10 @@
     }
   },
   "baseline": {
-    "count": 4305,
-    "count_change_percent": 0.023229,
-    "coverage_change_percent": 0.000179,
-    "ipv4_address_coverage": 285876480
+    "count": 4304,
+    "count_change_percent": 0.0,
+    "coverage_change_percent": 0.0,
+    "ipv4_address_coverage": 285876992
   },
   "crosscheck": {
     "comparison": {
