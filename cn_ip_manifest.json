@@ -7,73 +7,73 @@
           "entries": 1000,
           "part": 1,
           "path": "cn_ip_part_01.json",
-          "sha512": "f26384331ada6379c671df6ef7deb17d16a616b65212780b6164fd5b7d30d140756bf541b71ad7486c518854b345724a073f628d127e2947d1ca97b6a86b2e4a"
+          "sha512": "05d2adfc353581ff4c3358a0c3c97c5bad7e91fd25fc9aa7f51e95f6bc084d361808e06ed99298a7af637aa4464331917b06c8b295ab675c21bf21656ab6e658"
         },
         {
           "bytes": 17886,
           "entries": 1000,
           "part": 2,
           "path": "cn_ip_part_02.json",
-          "sha512": "c6a8044b604f4311cf41448085b59df6cd88d84efc7f2b523852c6923e11b2a21d70f9e33dcba10166ba75800cb16a4f05a6fa53962076dc667ddcc1c7b2a182"
+          "sha512": "2602d868a1a60fa0e8bbbfb23313f1e87cef3c48ad933c22780174a4890de1e40809d74d6785632149586f489772d16f6d8c7c6ff3f9bc566693a01e713aea69"
         },
         {
           "bytes": 17713,
           "entries": 1000,
           "part": 3,
           "path": "cn_ip_part_03.json",
-          "sha512": "6d70661a2a9d854f99879011ad05cd026f244f8d613a852155eeaad97d84c19c852c550bf307dc7d517c2746194d848fd15df5f7da0725f512a35da95f3f1d6d"
+          "sha512": "509c26923873f50cdc02c1b6f9718fce8e9d63b86b2046b9ac1e47668c1cad45bd4e8501c213f1d8a0aa7941206eac7200e648cb23b346d3fdbb75d54bb373a4"
         },
         {
           "bytes": 17910,
           "entries": 1000,
           "part": 4,
           "path": "cn_ip_part_04.json",
-          "sha512": "831e223b1f7a56abfa4dc97e4884bc7526894099dc23cb21687e409eaaef682498d68806bffd37a06df5977ab8fb29d4d00a26758d38aa96a7beb5eef947f6ad"
+          "sha512": "9be4ec326ff87d52957dfd2e537ab6daffe5c526d0d9743098d5faefd3f30fdbeef366478f9430f18c0c8fc93ac7af03737f5d7aebc5fef27e87f37b6a575515"
         },
         {
-          "bytes": 5544,
-          "entries": 305,
+          "bytes": 5526,
+          "entries": 304,
           "part": 5,
           "path": "cn_ip_part_05.json",
-          "sha512": "55596548a560574a982b1bf4cfea8334164df9f3c4b77f80c0fcb31695374b8afde42847e628e07a35f0bf2af82ce9ede10454d66d6e182c9d327f9a43b3daad"
+          "sha512": "813b68d7017cc3609d685b9a61d524cbdc4524198fb4ceb0410a832ccc66b3f602ce060805abffae5022d0e734b98ab44f1a52f4fb463edda255d32bcaee1d4b"
         }
       ],
       "format": "json",
       "maximum_bytes_per_shard": 60000,
       "maximum_entries_per_shard": 1000,
       "parts": 5,
-      "total_entries": 4305
+      "total_entries": 4304
     },
     "routeros_rsc": {
-      "bytes": 446097,
+      "bytes": 445993,
       "path": "all_cn_cidr_stage.rsc",
-      "sha256": "6010c473bf9dd79a4ea647a767b58bfa4a9c72a561741668d80d44695fade984",
+      "sha256": "eba22a78b308df71ffee11d20418741ee43d69a0dda0552421730ed92d2e7c32",
       "target_list": "CN_IP_STAGE"
     }
   },
   "baseline": {
-    "count": 4304,
-    "count_change_percent": 0.023234,
+    "count": 4305,
+    "count_change_percent": 0.023229,
     "coverage_change_percent": 0.00009,
-    "ipv4_address_coverage": 285877248
+    "ipv4_address_coverage": 285877504
   },
   "crosscheck": {
     "comparison": {
-      "crosscheck_not_in_primary_ipv4_addresses": 60284416,
-      "crosscheck_not_in_primary_percent": 17.442451,
-      "intersection_ipv4_addresses": 285334528,
-      "jaccard_percent": 82.428052,
+      "crosscheck_not_in_primary_ipv4_addresses": 60285440,
+      "crosscheck_not_in_primary_percent": 17.442709,
+      "intersection_ipv4_addresses": 285334272,
+      "jaccard_percent": 82.427795,
       "primary_not_in_crosscheck_ipv4_addresses": 542976,
       "primary_not_in_crosscheck_percent": 0.189933,
-      "union_ipv4_addresses": 346161920
+      "union_ipv4_addresses": 346162688
     },
     "entries": {
-      "count": 5636,
-      "ipv4_address_coverage": 345618944
+      "count": 5638,
+      "ipv4_address_coverage": 345619712
     },
     "result": "passed",
     "source": {
-      "canonical_sha256": "ba42559fa1f90c64df99a3b1eef4ee41028115db7db5683ec64125d26ae52e5a",
+      "canonical_sha256": "b3535f9e0e4e564d98fd06a2c047d85f3fede1d8470a6c7a55e2ab7e543e8237",
       "url": "https://raw.githubusercontent.com/fernvenue/chn-cidr-list/master/ipv4.txt"
     },
     "thresholds": {
@@ -83,14 +83,14 @@
     }
   },
   "entries": {
-    "count": 4305,
-    "ipv4_address_coverage": 285877504
+    "count": 4304,
+    "ipv4_address_coverage": 285877248
   },
-  "generated_at_utc": "2026-09-30T07:53:50Z",
-  "generation_id": "623ec830e9cd244e",
+  "generated_at_utc": "2026-10-01T08:15:18Z",
+  "generation_id": "8ea923c600276dda",
   "schema_version": 2,
   "source": {
-    "canonical_sha256": "623ec830e9cd244eac2640ada9e33339d75ec7f75a4f1c87e7e1c6a10588acb8",
+    "canonical_sha256": "8ea923c600276dda83ae070ca6fd6710bbca53cf4586d891188ff17f0b9adfec",
     "url": "https://ispip.clang.cn/all_cn_cidr.txt"
   },
   "validation": {
